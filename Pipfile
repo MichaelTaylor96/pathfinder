@@ -5,10 +5,12 @@ name = "pypi"
 
 [packages]
 pillow = "*"
+pytest = "*"
 
 [dev-packages]
 "flake8" = "*"
 yapf = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.7"
