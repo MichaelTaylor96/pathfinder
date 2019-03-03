@@ -1,5 +1,7 @@
 from PIL import Image, ImageDraw
 from random import randint, randrange, choice
+import sys
+sys.setrecursionlimit(2000)
 
 class Data:
     def __init__(self, file):
@@ -36,7 +38,7 @@ class Map:
         return self
 
     def draw_path(self, path, color):
-        for point in path[0]:
+        for point in path[1]:
             self.draw.point(point, color)
         return self
 
@@ -44,12 +46,13 @@ class Map:
         return self.image.show()
 
 class Pathfinder:
-    def __init__(self, starting_point, data):
-        self.starting_point = starting_point
+    def __init__(self, data):
         self.data = data
+        self.recursive_results = {}
+        self.iterative_results = []
 
-    def greedy_path(self):
-        current_point = self.starting_point
+    def greedy_path(self, starting_point):
+        current_point = starting_point
         path_cost = 0
         path = []
         path.append(current_point)
@@ -84,14 +87,14 @@ class Pathfinder:
                 path.append(sorted_choices[0])
                 current_point = sorted_choices[0]
 
-        return (path, path_cost)
+        return (path_cost, path)
 
-    def recursive_path(self, starting_point):
+    def recursive_best(self, starting_point):
+        if starting_point in self.recursive_results:
+            return self.recursive_results[starting_point]
+
         current_point = starting_point
-        path_cost = 0
-        path = []
-        path.append(current_point)
-
+        
         up = (current_point[0]+1, max(current_point[1]-1, 0))
         straight = (current_point[0]+1, current_point[1])
         down = (current_point[0]+1, min(current_point[1]+1, self.data.height-1))
@@ -105,29 +108,31 @@ class Pathfinder:
         choices_costs = dict(zip(choices, costs))
         sorted_choices = sorted(choices_costs, key=choices_costs.__getitem__)
 
-        if current_point[0] >= self.data.width - 587:
-            path.append(sorted_choices[0])
-            path_cost += choices_costs[sorted_choices[0]]
-            return (path_cost, path)
+        if current_point[0] == self.data.width - 2:
+            self.recursive_results[current_point] = (choices_costs[sorted_choices[0]], [sorted_choices[0]])
+            return self.recursive_results[current_point]
+        paths = [self.recursive_best(point) for point in choices]
+        new_paths = [(paths[0][0]+costs[0], [current_point]+paths[0][1]),
+                    (paths[1][0]+costs[1], [current_point]+paths[1][1]),
+                    (paths[2][0]+costs[2], [current_point]+paths[2][1])]
+        sorted_paths = sorted(new_paths, key=lambda x: x[0])
+        self.recursive_results[current_point] = sorted_paths[0]
+        return self.recursive_results[current_point]
 
-        path_choices = [self.recursive_path(point) for point in choices]
-        sorted_paths = sorted(path_choices, key=lambda x: x[0])
-        path_cost += sorted_paths[0][0]
-        path += sorted_paths[0][1]
-        return (path_cost, path)
+    def iterative_best(self, starting_point):
+        new_data = [row[(abs(column - starting_point[1])):] for column, row in enumerate            (self.data.list_of_rows)]
+        pass
 
 data = Data('elevation_small.txt')
 a_map = Map(data)
 a_map.draw_map()
-pathfinder = Pathfinder((0, 0), data)
-# paths = []
-path = pathfinder.recursive_path((0, 300))
-print(path)
-# for y in range(data.height):
-#     pathfinder.starting_point = (0, y)
-#     path = pathfinder.greedy_path()
-#     paths.append(pathfinder.greedy_path())
-#     a_map.draw_path(path, (0, 255, 0))
-# sorted_paths = sorted(paths, key=lambda x: x[1])
-# a_map.draw_path(sorted_paths[0], (0, 0, 255))
-# a_map.display()
+paths = []
+pathfinder = Pathfinder(data)
+pathfinder.recursive_best((0, 300))
+for y in range(data.height - 1):
+    path = pathfinder.greedy_path((0, y))
+    a_map.draw_path(path, (0, 255, 0))
+    paths.append(path)
+sorted_paths = sorted(paths, key=lambda x: x[0])
+a_map.draw_path(sorted_paths[0], (0, 0, 255))
+a_map.display()
