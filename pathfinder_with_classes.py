@@ -74,20 +74,19 @@ class Pathfinder:
                 path_cost += straight_cost
                 path.append(straight)
                 current_point = straight
-
             elif up_cost == down_cost:
                     options = [up, down]
                     decision = choice(options)
                     path_cost += choices_costs[decision]
                     path.append(decision)
-                    current_point = decision
-            
+                    current_point = decision           
             else:
                 path_cost += choices_costs[sorted_choices[0]]
                 path.append(sorted_choices[0])
                 current_point = sorted_choices[0]
 
         return (path_cost, path)
+
 
     def recursive_best(self, starting_point):
         if starting_point in self.recursive_results:
@@ -111,6 +110,7 @@ class Pathfinder:
         if current_point[0] == self.data.width - 2:
             self.recursive_results[current_point] = (choices_costs[sorted_choices[0]], [sorted_choices[0]])
             return self.recursive_results[current_point]
+
         paths = [self.recursive_best(point) for point in choices]
         new_paths = [(paths[0][0]+costs[0], [current_point]+paths[0][1]),
                     (paths[1][0]+costs[1], [current_point]+paths[1][1]),
@@ -119,20 +119,65 @@ class Pathfinder:
         self.recursive_results[current_point] = sorted_paths[0]
         return self.recursive_results[current_point]
 
+
     def iterative_best(self, starting_point):
-        new_data = [row[(abs(column - starting_point[1])):] for column, row in enumerate            (self.data.list_of_rows)]
-        pass
+        new_data = [column for column in zip(*self.data.list_of_rows)]
+        self.iterative_results = [(0, [(len(new_data)-1, y)]) for y, point in enumerate(new_data[-1])]
+
+        for x, column in enumerate(new_data[-2::-1]):
+            new_results = []
+            for y, point in enumerate(column):
+                current_point = ((len(new_data)-x)-2, y)
+                up_path = [current_point] + self.iterative_results[max(y-1, 0)][1]
+                straight_path = [current_point] + self.iterative_results[y][1]
+                down_path = [current_point] + self.iterative_results[min(y+1, len(new_data[0])-1)][1]
+
+                up_cost = abs(point-self.data.get_elevation(up_path[1]))
+                straight_cost = abs(point-self.data.get_elevation(straight_path[1]))
+                down_cost = abs(point-self.data.get_elevation(down_path[1]))
+
+                up_choice = (up_cost + self.iterative_results[y][0], up_path)
+                straight_choice = (straight_cost + self.iterative_results[y][0], straight_path)
+                down_choice = (down_cost + self.iterative_results[y][0], down_path)
+
+                choices = [up_choice, straight_choice, down_choice]
+                sorted_choices = sorted(choices, key=lambda x: x[0])
+                new_results.append(sorted_choices[0])
+            self.iterative_results = new_results
+            
+        return self.iterative_results
 
 data = Data('elevation_small.txt')
 a_map = Map(data)
 a_map.draw_map()
 paths = []
 pathfinder = Pathfinder(data)
-pathfinder.recursive_best((0, 300))
-for y in range(data.height - 1):
-    path = pathfinder.greedy_path((0, y))
+
+#Greedy algorithm
+# for y in range(data.height - 1):
+#     path = pathfinder.greedy_path((0, y))
+#     a_map.draw_path(path, (0, 255, 0))
+#     paths.append(path)
+# sorted_paths = sorted(paths, key=lambda x: x[0])
+# a_map.draw_path(sorted_paths[0], (0, 0, 255))
+# a_map.display()
+# print(sorted_paths[0][0])
+
+#Iterative algorithm
+paths = pathfinder.iterative_best((0, 300))
+for path in paths:
     a_map.draw_path(path, (0, 255, 0))
-    paths.append(path)
 sorted_paths = sorted(paths, key=lambda x: x[0])
 a_map.draw_path(sorted_paths[0], (0, 0, 255))
 a_map.display()
+print(sorted_paths[0][0])
+
+#Recursive algorithm
+# for y in range(data.height - 1):
+#     path = pathfinder.recursive_best((0, y))
+#     a_map.draw_path(path, (0, 255, 0))
+#     paths.append(path)
+# sorted_paths = sorted(paths, key=lambda x: x[0])
+# a_map.draw_path(sorted_paths[0], (0, 0, 255))
+# a_map.display()
+# print(sorted_paths[0][0])
