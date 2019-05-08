@@ -32,8 +32,8 @@ class Map:
         self.draw = ImageDraw.Draw(self.image)
 
     def draw_map(self):
-        for y in range(len(self.data.list_of_rows)):
-            for x in range(len(self.data.list_of_rows[y])):
+        for y in range(self.data.height):
+            for x in range(self.data.width):
                 self.draw.point((x, y), self.data.rgb(x, y))
         return self
 
@@ -147,30 +147,31 @@ class Pathfinder:
             
         return self.iterative_results
 
-data = Data('elevation_small.txt')
+data = Data('elevation_large.txt')
 a_map = Map(data)
 a_map.draw_map()
 paths = []
 pathfinder = Pathfinder(data)
 
-#Greedy algorithm
-# for y in range(data.height - 1):
-#     path = pathfinder.greedy_path((0, y))
-#     a_map.draw_path(path, (0, 255, 0))
-#     paths.append(path)
-# sorted_paths = sorted(paths, key=lambda x: x[0])
-# a_map.draw_path(sorted_paths[0], (0, 0, 255))
-# a_map.display()
-# print(sorted_paths[0][0])
 
-#Iterative algorithm
-paths = pathfinder.iterative_best((0, 300))
-for path in paths:
+#Greedy algorithm
+for y in range(data.height - 1):
+    path = pathfinder.greedy_path((0, y))
     a_map.draw_path(path, (0, 255, 0))
+    paths.append(path)
 sorted_paths = sorted(paths, key=lambda x: x[0])
 a_map.draw_path(sorted_paths[0], (0, 0, 255))
 a_map.display()
 print(sorted_paths[0][0])
+
+#Iterative algorithm
+# paths = pathfinder.iterative_best((0, 300))
+# for path in paths:
+#     a_map.draw_path(path, (0, 255, 0))
+# sorted_paths = sorted(paths, key=lambda x: x[0])
+# a_map.draw_path(sorted_paths[0], (0, 0, 255))
+# a_map.display()
+# print(sorted_paths[0][0])
 
 #Recursive algorithm
 # for y in range(data.height - 1):
